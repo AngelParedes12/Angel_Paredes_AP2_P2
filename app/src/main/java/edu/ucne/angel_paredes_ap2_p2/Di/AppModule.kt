@@ -40,5 +40,6 @@ object AppModule {
             .baseUrl("")
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
-            build()
+            .build())
+
 }
