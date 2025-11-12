@@ -6,18 +6,12 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import edu.ucne.angel_paredes_ap2_p2.Data.Remote.Dto.GastosDto.GastosApi
+import edu.ucne.angel_paredes_ap2_p2.Data.Remote.Api.GastosApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
-import kotlin.jvm.java
-data class Gasto(
-    val gastoId: Int,
-    val descripcion: String,
-    val monto: Double,
-    val fecha: String
-)
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -25,36 +19,34 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-        return OkHttpClient.Builder()
-            .addInterceptor(logging)
+    fun provideOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            })
             .build()
-    }
-    @Module
-    @InstallIn(SingletonComponent::class)
-    object AppModule {
-        @Provides
-        @Singleton
-        fun provideOkHttpClient(): OkHttpClient {
-            val logging = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
-            return OkHttpClient.Builder().addInterceptor(logging).build()
-        }
 
-        @Provides
-        @Singleton
-        fun provideRetrofit(client: OkHttpClient): Retrofit =
-            Retrofit.Builder()
-                .baseUrl("https://gestionhuacalesapi.azurewebsites.net/")
-                .client(client)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
+    @Provides
+    @Singleton
+    fun provideMoshi(): Moshi =
+        Moshi.Builder()
+            .add(KotlinJsonAdapterFactory())
+            .build()
 
-        @Provides
-        @Singleton
-        fun provideGastosApi(retrofit: Retrofit): GastosApi =
-            retrofit.create(GastosApi::class.java)
-    }
+    @Provides
+    @Singleton
+    fun provideRetrofit(
+        okHttpClient: OkHttpClient,
+        moshi: Moshi
+    ): Retrofit =
+        Retrofit.Builder()
+            .baseUrl("https://gestionhuacalesapi.azurewebsites.net/")
+            .client(okHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+
+    @Provides
+    @Singleton
+    fun provideGastosApiService(retrofit: Retrofit): GastosApiService =
+        retrofit.create(GastosApiService::class.java)
 }
